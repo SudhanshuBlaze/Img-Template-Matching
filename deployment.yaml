@@ -1,0 +1,55 @@
+# Deployment Part
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: ai-deployment
+spec:
+  selector:
+    matchLabels:
+      app: ai-app
+      tier: ai
+      track: stable
+  replicas: 1
+  template:
+    metadata:
+      labels:
+        app: ai-app
+        tier: ai
+        track: stable
+    spec:
+      containers:
+        - name: ai-app
+          image: <IMAGE>
+          imagePullPolicy: Always
+          resources:
+            requests:
+              memory: "2Gi" # Request 2 Gibi byte of RAM i.e. 2045 MB
+              cpu: "125m" # Request 125 milli-core CPU i.e. 1 vCPU VM instance
+            limits:
+              memory: "2Gi" # Beware: Max limit can cross the 2Gi boundary
+              cpu: "250m" # Max limit will be the 250m boundary.
+      imagePullSecrets:
+        - name: ghcr-credentials
+---
+# Service Part: To allow the service to be accessed from outside the cluster
+apiVersion: v1
+kind: Service
+metadata:
+  name: ai
+spec:
+  selector:
+    app: ai-app
+    tier: ai
+  ports:
+    - name: ai-api
+      protocol: "TCP"
+      port: 8000
+      targetPort: 8000 # The port on our API will be running
+    - name: ai-app
+      protocol: "TCP"
+      port: 8501
+      targetPort: 8501 # The port on our APP will be running
+  externalTrafficPolicy: Local
+  type: LoadBalancer
+
